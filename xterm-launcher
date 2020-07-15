@@ -177,13 +177,12 @@ history_delete() {
 	sed -i "/^${1}\$/d" "${history_path}"
 
 	# Reload the completions.
-	history_load
 	commands_load
-	completions_update
 }
 
 # Initialize the list of commands.
 commands_load() {
+	history_load
 	commands="$({
 			# Command names.
 			compgen -c # co
@@ -198,6 +197,7 @@ commands_load() {
 		# Remove lines appearing more than once. This gets all the
 		# commands which are not builtins or keywords.
 		} | sort | uniq -u)"
+	completions_update
 }
 
 main() {
@@ -207,10 +207,8 @@ main() {
 	stty -echo
 
 	# Initialization.
-	history_load
 	commands_load
 	selection=0
-	completions_update
 
 	# Draw the first time.
 	draw_display
