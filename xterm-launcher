@@ -59,6 +59,11 @@ input_process_esc() {
 				(( selection < ${#completions[@]} - 1 )) &&
 				(( selection++ ))
 			;;
+		'[3~') # Delete.
+			if (( selection >= 0 )); then
+				history_delete "${completions[$selection]}"
+			fi
+			;;
 	esac
 }
 
@@ -162,6 +167,19 @@ history_append() {
 
 	# Append to the history file if it is available.
 	[ "${history_path}" ] && echo "${1}" >> "${history_path}"
+}
+
+# history_delete <command>
+# Remove a command from the history file.
+history_delete() {
+	[ "${history_path}" ] || return 1
+
+	sed -i "/^${1}\$/d" "${history_path}"
+
+	# Reload the completions.
+	history_load
+	commands_load
+	completions_update
 }
 
 # Initialize the list of commands.
