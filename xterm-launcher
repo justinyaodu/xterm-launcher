@@ -1,12 +1,8 @@
 #!/bin/bash
 
-# Input functions.
-read_char='read -N 1'
-read_all='read -N 9999 -t 0.001'
-
 input_process() {
 	local char
-	$read_char char
+	read -N 1 char
 
 	case "${char}" in
 		$'\e')
@@ -37,7 +33,7 @@ input_process() {
 
 input_process_esc() {
 	local chars
-	$read_all chars
+	read -N 9999 -t 0.001 chars
 
 	case "${chars}" in
 		'') # Escape.
