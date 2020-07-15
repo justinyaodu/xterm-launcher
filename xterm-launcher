@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Used for regex matching in a few places.
+space_char=' '
+
 input_process() {
 	local char
 	read -N 1 char
@@ -88,8 +91,9 @@ draw_display() {
 	local i
 	local line
 	for (( i = 0; i < num_visible; i++ )); do
-
 		line="${completions[$i]:0:$COLUMNS}"
+
+		[[ $line =~ $space_char ]] && line="  ${line}"
 
 		if (( i == selection )); then
 			# Special formatting for the selected line.
@@ -113,17 +117,69 @@ trap_exit() {
 	# Terminate the preceding line.
 	echo
 
+	history_append "${output}"
+
 	# Output the user's selection, if any.
 	echo "${output}"
 }
 
+# mkdir_recursive <path> <permissions>
+# Similar to mkdir -p, but apply the specified permissions to every directory
+# created.
+mkdir_recursive() {
+	[ -d "${1}" ] && return 0
+
+	# Ensure that the parent directory exists.
+	mkdir_recursive "$(dirname "${1}")" || return
+
+	# Create the directory with the specified permissions.
+	mkdir -m "${2}" "${1}"
+}
+
+# Load the commands from the history file.
+history_load() {
+	# Location of the history file.
+	data_dir="${XDG_DATA_HOME:-"${HOME}/.local/share"}/xterm-launcher"
+
+	mkdir_recursive "${data_dir}" 700 &> /dev/null || return 1
+
+	history_path="${data_dir}/history"
+	if [ -f "${history_path}" ]; then
+		history_commands="$(<"$history_path")"
+	fi
+}
+
+# history_append <command>
+# Add a command to the history file, if it is suitable for inclusion.
+history_append() {
+	# Exclude commands that are already in the command list.
+	grep -qx "${1}" <<< "${commands}" && return
+
+	# Only include commands with spaces (indicates that command-line
+	# parameters are being provided). This makes it harder for typos to be
+	# stored in the history.
+	[[ $1 =~ $space_char ]] || return
+
+	# Append to the history file if it is available.
+	[ "${history_path}" ] && echo "${1}" >> "${history_path}"
+}
+
+# Initialize the list of commands.
 commands_load() {
-	# Create a list of all executable names.
-	# Output all command names, builtins, and keywords...
-	commands="$({ compgen -c; compgen -b; compgen -k; } |
-		# ...and remove lines appearing more than once. This gets all
-		# the commands which are not builtins or keywords.
-		sort | uniq -u)"
+	commands="$({
+			# Command names.
+			compgen -c # co
+			# Builtins.
+			compgen -b
+
+			# Keywords.
+			compgen -k
+
+			# History commands.
+			[ "${history_commands}" ] && echo "${history_commands}"
+		# Remove lines appearing more than once. This gets all the
+		# commands which are not builtins or keywords.
+		} | sort | uniq -u)"
 }
 
 main() {
@@ -133,6 +189,7 @@ main() {
 	stty -echo
 
 	# Initialization.
+	history_load
 	commands_load
 	selection=0
 	completions_update
