@@ -1,0 +1,146 @@
+#!/bin/bash
+
+# Input functions.
+read_char='read -N 1'
+read_all='read -N 9999 -t 0.001'
+
+input_process() {
+	local char
+	$read_char char
+
+	case "${char}" in
+		$'\e')
+			input_process_esc
+			;;
+		$'\n')
+			output="${completions[$selection]:-"${input_text}"}"
+			exit 0
+			;;
+		$'\t')
+			# Get the longest common substring of the available
+			# options.
+			input_text="$(grep -Po '^(.*)(?=.* \1.*$)' <<< \
+				"${completions[0]} ${completions[-1]}")"
+			;;
+		$'\b')
+			# Remove the last character.
+			input_text="${input_text/%?}"
+			completions_update
+			;;
+		[[:print:]])
+			# Append the typed character.
+			input_text+="${char}"
+			completions_update
+			;;
+	esac
+}
+
+input_process_esc() {
+	local chars
+	$read_all chars
+
+	case "${chars}" in
+		'') # Escape.
+			exit 0
+			;;
+		'[A') # Up.
+			(( selection > 0 )) && (( selection-- ))
+			;;
+		'[B') # Down.
+			(( selection < LINES - 2 )) &&
+				(( selection < ${#completions[@]} - 1 )) &&
+				(( selection++ ))
+			;;
+	esac
+}
+
+completions_update() {
+	# Get an array of executable names which start with the input text.
+	readarray -t completions < <(grep "^${input_text}" <<< "${executables}")
+
+	# Ensure that the selection index is still in range.
+	if (( ${#completions[@]} == 0 )); then
+		selection=0
+	elif (( selection >= ${#completions[@]} )); then
+		(( selection = ${#completions[@]} - 1 ))
+	fi
+}
+
+draw_display() {
+	# Make the cursor invisible while drawing.
+	tput civis
+
+	clear
+
+	# Print the text entered by the user.
+	local offset=$(( ${#input_text} >= COLUMNS ? -(COLUMNS - 1) : 0 ))
+	echo -n "${input_text:$offset}"
+
+	# Determine the number of completion options visible in the window.
+	local num_visible=$(( ${#completions[@]} ))
+	(( num_visible > LINES - 1 )) && num_visible=$(( LINES - 1 ))
+
+	# Print completion options to fill the rest of the screen.
+	local i
+	local line
+	for (( i = 0; i < num_visible; i++ )); do
+
+		line="${completions[$i]:0:$COLUMNS}"
+
+		if (( i == selection )); then
+			# Special formatting for the selected line.
+			line="$(tput rev)${line}$(tput sgr0)"
+		fi
+
+		echo
+		echo -n "${line}"
+	done
+
+	# Move the cursor back to where the input text is.
+	tput cup 0 ${#input_text}
+
+	# Restore cursor visibility.
+	tput cnorm
+}
+
+trap_exit() {
+	# Terminate the preceding line.
+	echo
+
+	# Output the user's selection, if any.
+	echo "${output}"
+}
+
+main() {
+	trap trap_exit EXIT
+
+	# Cache a list of all executable names.
+	# Output all command names, builtins, and keywords...
+	executables="$({ compgen -c; compgen -b; compgen -k; } |
+		# ...and remove lines appearing more than once. This gets all
+		# the commands which are not builtins or keywords.
+		sort | uniq -u)"
+
+	# Do not echo user input.
+	stty -echo
+
+	# Initialization.
+	selection=0
+	completions_update
+
+	# Draw the first time.
+	draw_display
+
+	while :; do
+		input_process
+		draw_display
+	done
+}
+
+if [ "${1}" == '--in-xterm' ]; then
+	main
+else
+	# Run this script in an XTerm window, passing along any parameters.
+	xterm "${@}" -l -lf '-' -e "'${0}' --in-xterm" |
+		tail -n 1 | tr -d '\r' | bash &
+fi
