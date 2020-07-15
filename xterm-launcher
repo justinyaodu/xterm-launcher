@@ -18,7 +18,7 @@ input_process() {
 			;;
 		$'\t')
 			# Get the longest common substring of the available
-			# options.
+			# commands.
 			input_text="$(grep -Po '^(.*)(?=.* \1.*$)' <<< \
 				"${completions[0]} ${completions[-1]}")"
 			;;
@@ -61,7 +61,7 @@ input_process_esc() {
 
 completions_update() {
 	# Get an array of executable names which start with the input text.
-	readarray -t completions < <(grep "^${input_text}" <<< "${executables}")
+	readarray -t completions < <(grep "^${input_text}" <<< "${commands}")
 
 	# Ensure that the selection index is still in range. If there are no
 	# completion options, then nothing will be selected (index -1).
@@ -117,20 +117,23 @@ trap_exit() {
 	echo "${output}"
 }
 
-main() {
-	trap trap_exit EXIT
-
-	# Cache a list of all executable names.
+commands_load() {
+	# Create a list of all executable names.
 	# Output all command names, builtins, and keywords...
-	executables="$({ compgen -c; compgen -b; compgen -k; } |
+	commands="$({ compgen -c; compgen -b; compgen -k; } |
 		# ...and remove lines appearing more than once. This gets all
 		# the commands which are not builtins or keywords.
 		sort | uniq -u)"
+}
+
+main() {
+	trap trap_exit EXIT
 
 	# Do not echo user input.
 	stty -echo
 
 	# Initialization.
+	commands_load
 	selection=0
 	completions_update
 
