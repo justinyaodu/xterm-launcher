@@ -9,7 +9,11 @@ input_process() {
 			input_process_esc
 			;;
 		$'\n')
-			output="${completions[$selection]:-"${input_text}"}"
+			if (( selection > 0 )); then
+				output="${completions[$selection]}"
+			else
+				output="${input_text}"
+			fi
 			exit 0
 			;;
 		$'\t')
@@ -26,6 +30,11 @@ input_process() {
 		[[:print:]])
 			# Append the typed character.
 			input_text+="${char}"
+
+			# Deselect if a space is typed, to avoid autocompleting
+			# the parameters to a command from the history.
+			[ "${char}" == ' ' ] && selection=-1
+
 			completions_update
 			;;
 	esac
@@ -40,7 +49,7 @@ input_process_esc() {
 			exit 0
 			;;
 		'[A') # Up.
-			(( selection > 0 )) && (( selection-- ))
+			(( selection >= 0 )) && (( selection-- ))
 			;;
 		'[B') # Down.
 			(( selection < LINES - 2 )) &&
@@ -54,10 +63,9 @@ completions_update() {
 	# Get an array of executable names which start with the input text.
 	readarray -t completions < <(grep "^${input_text}" <<< "${executables}")
 
-	# Ensure that the selection index is still in range.
-	if (( ${#completions[@]} == 0 )); then
-		selection=0
-	elif (( selection >= ${#completions[@]} )); then
+	# Ensure that the selection index is still in range. If there are no
+	# completion options, then nothing will be selected (index -1).
+	if (( selection >= ${#completions[@]} )); then
 		(( selection = ${#completions[@]} - 1 ))
 	fi
 }
