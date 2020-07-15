@@ -88,6 +88,8 @@ draw_display() {
 			line="$(tput rev)${line}$(tput sgr0)"
 		fi
 
+		# Make sure there is no newline on the end of the last line,
+		# which would cause undesired scrolling.
 		echo
 		echo -n "${line}"
 	done
