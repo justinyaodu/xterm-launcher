@@ -13,8 +13,10 @@ input_process() {
 			;;
 		$'\n')
 			if (( selection > 0 )); then
+				# Use the text of the selected command.
 				output="${completions[$selection]}"
 			else
+				# Use the text entered by the user.
 				output="${input_text}"
 			fi
 			exit 0
