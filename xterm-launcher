@@ -185,7 +185,8 @@ commands_load() {
 	history_load
 	commands="$({
 			# Command names.
-			compgen -c # co
+			compgen -c
+
 			# Builtins.
 			compgen -b
 
