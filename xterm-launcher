@@ -68,7 +68,7 @@ input_process_esc() {
 }
 
 completions_update() {
-	# Get an array of executable names which start with the input text.
+	# Get an array of available commands which start with the input text.
 	readarray -t completions < <(grep "^${input_text}" <<< "${commands}")
 
 	# Ensure that the selection index is still in range. If there are no
