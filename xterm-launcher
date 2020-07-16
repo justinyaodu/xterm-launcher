@@ -12,7 +12,7 @@ input_process() {
 			input_process_esc
 			;;
 		$'\n')
-			if (( selection > 0 )); then
+			if (( selection >= 0 )); then
 				# Use the text of the selected command.
 				output="${completions[$selection]}"
 			else
