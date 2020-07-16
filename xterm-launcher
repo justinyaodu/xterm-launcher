@@ -119,10 +119,11 @@ draw_display() {
 }
 
 trap_exit() {
+	# Update the command history.
+	history_append "${output}"
+
 	# Terminate the preceding line.
 	echo
-
-	history_append "${output}"
 
 	# Output the user's selection, if any.
 	echo "${output}"
