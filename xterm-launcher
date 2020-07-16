@@ -84,7 +84,8 @@ draw_display() {
 
 	clear
 
-	# Print the text entered by the user.
+	# Print the text entered by the user. If it is too long to fit in the
+	# terminal window, show the rightmost portion.
 	local offset=$(( ${#input_text} >= COLUMNS ? -(COLUMNS - 1) : 0 ))
 	echo -n "${input_text:$offset}"
 
@@ -93,15 +94,19 @@ draw_display() {
 	(( num_visible > LINES - 1 )) && num_visible=$(( LINES - 1 ))
 
 	# Print completion options to fill the rest of the screen.
-	local i
-	local line
+	local i line
 	for (( i = 0; i < num_visible; i++ )); do
-		line="${completions[$i]:0:$COLUMNS}"
+		line="${completions[$i]}"
 
+		# Indent commands with parameters (from the history) for
+		# visual distinction.
 		[[ $line =~ $space_char ]] && line="  ${line}"
 
+		# Trim to fit the width of the terminal.
+		line="${line:0:$COLUMNS}"
+
+		# Invert the colors of the selected line.
 		if (( i == selection )); then
-			# Special formatting for the selected line.
 			line="$(tput rev)${line}$(tput sgr0)"
 		fi
 
@@ -111,7 +116,9 @@ draw_display() {
 		echo -n "${line}"
 	done
 
-	# Move the cursor back to where the input text is.
+	# Move the cursor back to where the input text is. (If the input text is
+	# wider than the terminal window, the cursor will go to the rightmost
+	# edge anyway.)
 	tput cup 0 ${#input_text}
 
 	# Restore cursor visibility.
