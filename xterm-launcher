@@ -8,6 +8,9 @@ input_process() {
 	read -N 1 char
 
 	case "${char}" in
+		$'\004')
+			exit 0
+			;;
 		$'\e')
 			input_process_esc
 			;;
