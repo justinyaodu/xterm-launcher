@@ -10,6 +10,8 @@ _(Ab)use XTerm as a desktop application launcher._
 
 ![Demo with arrow keys](demo/demo-arrow-keys.gif)
 
+_Selecting a command using the arrow keys._
+
 On startup, `xterm-launcher` lists all of the commands available in your `$PATH`. As you type, the commands matching your input are continuously updated. Tab completion is also available.
 
 Pressing <kbd>Enter</kbd> will run the selected command. You may use <kbd>Up</kbd> and <kbd>Down</kbd> to select another command.
@@ -19,6 +21,8 @@ To cancel, you may use <kbd>Esc</kbd>, <kbd>Ctrl</kbd><kbd>C</kbd>, <kbd>Ctrl</k
 ### Command History
 
 ![Demo with command history](demo/demo-history.gif)
+
+_Adding a command to the history, then removing it._
 
 If you run a command with arguments, it will be added to your command history. This can be useful for recalling long, frequently used commands. To remove unwanted history entries, you can select them with the arrow keys and press <kbd>Delete</kbd>.
 
